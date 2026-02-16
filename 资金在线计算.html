@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>个人资金计算器（投资/等额换算/日常资金+房贷车贷）</title>
+  <style>
+    :root{
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --text: #101828;
+      --muted: #667085;
+      --line: #e6eaf2;
+      --accent: #2563eb;
+      --accent2:#7c3aed;
+      --good:#16a34a;
+      --bad:#dc2626;
+      --shadow: 0 10px 25px rgba(16,24,40,.06);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC","Hiragino Sans GB","Microsoft YaHei", "Noto Sans CJK SC", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(37,99,235,.10), transparent 55%),
+                  radial-gradient(900px 500px at 110% 10%, rgba(124,58,237,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 48px}
+    header{
+      position:sticky; top:0; z-index:10;
+      padding:12px 0 10px;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(to bottom, rgba(247,249,252,.92), rgba(247,249,252,.65));
+      border-bottom:1px solid rgba(230,234,242,.8);
+    }
+    .headRow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{
+      width:36px;height:36px;border-radius:12px;
+      background: linear-gradient(135deg, rgba(37,99,235,.95), rgba(124,58,237,.9));
+      box-shadow: var(--shadow);
+      position:relative; overflow:hidden;
+    }
+    .logo:after{
+      content:""; position:absolute; inset:-20%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+      transform: rotate(20deg) translateX(-60%);
+      animation: sheen 2.6s ease-in-out infinite;
+    }
+    @keyframes sheen{
+      0%{transform:rotate(20deg) translateX(-60%)}
+      55%{transform:rotate(20deg) translateX(140%)}
+      100%{transform:rotate(20deg) translateX(140%)}
+    }
+    h1{font-size:16px;margin:0}
+    .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .tabs{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
+    .tabBtn{
+      appearance:none;border:1px solid var(--line);
+      background: rgba(255,255,255,.75);
+      color:var(--text);
+      border-radius:999px;
+      padding:9px 12px;
+      font-size:13px;
+      cursor:pointer;
+      transition: transform .12s ease, background .2s ease, border-color .2s ease;
+      will-change: transform;
+    }
+    .tabBtn:hover{transform: translateY(-1px)}
+    .tabBtn[aria-selected="true"]{
+      background: rgba(37,99,235,.10);
+      border-color: rgba(37,99,235,.35);
+      color: #1d4ed8;
+    }
+    .grid{
+      display:grid; gap:16px;
+      grid-template-columns: 1.1fr .9fr;
+      margin-top:18px;
+    }
+    @media (max-width: 920px){
+      .grid{grid-template-columns: 1fr}
+      header{position:relative}
+    }
+    .card{
+      background: var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:16px;
+    }
+    .titleRow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .card h2{font-size:15px;margin:0 0 6px}
+    .hint{color:var(--muted);font-size:12px;line-height:1.5;margin:0}
+    .section{margin-top:14px}
+    .section h3{font-size:13px;margin:0 0 8px;color:#1f2937}
+    .form{
+      display:grid; gap:10px;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width: 560px){
+      .form{grid-template-columns: 1fr}
+    }
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input, select{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 11px;
+      font-size:14px;
+      background:#fff;
+      outline:none;
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    input:focus, select:focus{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.10);
+    }
+    .row{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .toggle{
+      display:flex; align-items:center; gap:10px;
+      padding:10px 12px;
+      border:1px dashed rgba(102,112,133,.35);
+      border-radius:14px;
+      background: rgba(37,99,235,.04);
+    }
+    .toggle input{width:auto}
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap}
+    button.primary{
+      border:none; cursor:pointer;
+      padding:10px 14px;
+      border-radius:12px;
+      background: linear-gradient(135deg, rgba(37,99,235,.95), rgba(124,58,237,.9));
+      color:white;
+      font-weight:600;
+      box-shadow: 0 10px 22px rgba(37,99,235,.18);
+      transition: transform .12s ease, filter .2s ease;
+    }
+    button.primary:hover{transform: translateY(-1px); filter:brightness(1.02)}
+    button.ghost{
+      border:1px solid var(--line);
+      background: white;
+      cursor:pointer;
+      padding:10px 14px;
+      border-radius:12px;
+      color:var(--text);
+      transition: transform .12s ease;
+    }
+    button.ghost:hover{transform: translateY(-1px)}
+    .panel{display:none; animation: fadeIn .18s ease-out;}
+    .panel.active{display:block}
+    @keyframes fadeIn{from{opacity:0; transform: translateY(6px)}to{opacity:1; transform: translateY(0)}}
+    .results{display:grid; gap:10px; margin-top:10px;}
+    .kpi{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background: linear-gradient(to bottom, rgba(16,24,40,.015), rgba(16,24,40,.0));
+    }
+    .kpi .k{font-size:12px;color:var(--muted)}
+    .kpi .v{font-size:18px;font-weight:700;margin-top:4px}
+    .kpi .s{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35}
+    .ok{color:var(--good)}
+    .bad{color:var(--bad)}
+    .mono{font-variant-numeric: tabular-nums}
+    .small{font-size:12px;color:var(--muted);line-height:1.55}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    .note{
+      border-left:4px solid rgba(37,99,235,.45);
+      background: rgba(37,99,235,.04);
+      padding:10px 12px;
+      border-radius: 12px;
+      color: #1f3a8a;
+      font-size:12px;
+      line-height:1.6;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 9px;
+      border-radius:999px;
+      border:1px solid rgba(37,99,235,.25);
+      background: rgba(37,99,235,.07);
+      font-size:12px; color:#1d4ed8;
+      white-space:nowrap;
+    }
+    footer{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6}
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <div class="headRow">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h1>个人资金计算器</h1>
+            <div class="sub">投资收益 / 等额换算（过去或未来） / 日常资金（含房贷车贷）</div>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="模式切换">
+          <button class="tabBtn" role="tab" aria-selected="true"  data-tab="invest">投资到银行</button>
+          <button class="tabBtn" role="tab" aria-selected="false" data-tab="equiv">等额换算</button>
+          <button class="tabBtn" role="tab" aria-selected="false" data-tab="daily">日常资金</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <section class="card" id="leftCard">
+        <div class="titleRow">
+          <div>
+            <h2 id="panelTitle">投资到银行</h2>
+            <p class="hint" id="panelHint">输入本金、投入年限与年利率，计算未来总额与利润（支持按年或按月复利）。</p>
+          </div>
+          <span class="pill" id="tvmpill">TVM 可选</span>
+        </div>
+
+        <!-- INVEST -->
+        <div class="panel active" id="panel-invest" role="tabpanel">
+          <div class="section">
+            <h3>输入</h3>
+            <div class="form">
+              <div>
+                <label>本金（元）</label>
+                <input id="inv_pv" type="number" min="0" step="0.01" value="100000" />
+              </div>
+              <div>
+                <label>年利率（%）</label>
+                <input id="inv_rate" type="number" step="0.0001" value="2.5" />
+              </div>
+              <div>
+                <label>投入时间（年）</label>
+                <input id="inv_years" type="number" min="0" step="0.01" value="5" />
+              </div>
+              <div>
+                <label>复利频率</label>
+                <select id="inv_comp">
+                  <option value="1">按年复利</option>
+                  <option value="12" selected>按月复利</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="toggle">
+                <input id="inv_tvm" type="checkbox" />
+                <div>
+                  <div style="font-size:13px;font-weight:600;">是否考虑时间价值（TVM）</div>
+                  <div class="small">勾选后会按“折现率”给出折现到今天的等值（PV）。</div>
+                </div>
+              </div>
+              <div style="min-width:220px;flex:1">
+                <label>折现率（年 %，TVM 勾选时生效）</label>
+                <input id="inv_disc" type="number" step="0.0001" value="3" />
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="primary" id="inv_calc">计算</button>
+              <button class="ghost" id="inv_reset">重置示例</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- EQUIV -->
+        <div class="panel" id="panel-equiv" role="tabpanel">
+          <div class="section">
+            <h3>输入</h3>
+            <div class="form">
+              <div>
+                <label>金额（元）</label>
+                <input id="eq_amount" type="number" min="0" step="0.01" value="10000" />
+              </div>
+              <div>
+                <label>年利率/折现率（%）</label>
+                <input id="eq_rate" type="number" step="0.0001" value="3" />
+              </div>
+              <div>
+                <label>年数（年）</label>
+                <input id="eq_years" type="number" min="0" step="0.01" value="10" />
+              </div>
+              <div>
+                <label>方向</label>
+                <select id="eq_dir">
+                  <option value="toFuture" selected>把现在的钱换算到未来（FV）</option>
+                  <option value="toPast">把未来的钱折现到现在（PV）</option>
+                </select>
+              </div>
+              <div>
+                <label>复利/折现频率</label>
+                <select id="eq_comp">
+                  <option value="1" selected>按年</option>
+                  <option value="12">按月</option>
+                </select>
+              </div>
+              <div>
+                <label>（可选）额外说明</label>
+                <input id="eq_note" type="text" placeholder="例如：通胀、机会成本、理财预期收益" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="toggle">
+                <input id="eq_tvm" type="checkbox" checked />
+                <div>
+                  <div style="font-size:13px;font-weight:600;">是否考虑时间价值（TVM）</div>
+                  <div class="small">这个模式本质就是 TVM；不勾选则按简单“名义换算”。</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="primary" id="eq_calc">计算</button>
+              <button class="ghost" id="eq_reset">重置示例</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DAILY -->
+        <div class="panel" id="panel-daily" role="tabpanel">
+          <div class="section">
+            <h3>收入与固定消费</h3>
+            <div class="form">
+              <div>
+                <label>月工资（元）</label>
+                <input id="d_salary" type="number" min="0" step="0.01" value="12000" />
+              </div>
+              <div>
+                <label>每月固定消费合计（元）</label>
+                <input id="d_expenses" type="number" min="0" step="0.01" value="6000" />
+              </div>
+
+              <div>
+                <label>工资年增长率（%/年）</label>
+                <input id="d_salary_g" type="number" step="0.0001" value="3" />
+              </div>
+              <div>
+                <label>消费年增长率（%/年）</label>
+                <input id="d_expenses_g" type="number" step="0.0001" value="2" />
+              </div>
+
+              <div>
+                <label>储蓄/理财年化收益率（%）</label>
+                <input id="d_return" type="number" step="0.0001" value="3.5" />
+              </div>
+              <div>
+                <label>复利方式</label>
+                <select id="d_comp">
+                  <option value="12" selected>按月（更贴近现实）</option>
+                  <option value="1">按年（折算等效月利率）</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <h3>额外现金流（更贴近现实）</h3>
+            <div class="form">
+              <div>
+                <label>年终奖（元/年，可选）</label>
+                <input id="d_bonus" type="number" min="0" step="0.01" value="0" />
+              </div>
+              <div>
+                <label>大额支出（元/年，可选）</label>
+                <input id="d_bigexp" type="number" min="0" step="0.01" value="0" />
+              </div>
+              <div style="grid-column:1/-1" class="small">
+                默认在每年最后一个月结算：年终奖记为收入 +，大额支出记为支出 −。
+              </div>
+            </div>
+
+            <div class="note" style="margin-top:10px">
+              关键修复：把“年数”强制换算为“月数”进行逐月累积（每月净结余都会存入并参与复利），并新增“累计净存入（不含收益）”用于自检。
+            </div>
+
+            <div class="hr"></div>
+
+            <h3>房贷（可选）</h3>
+            <div class="form">
+              <div>
+                <label>房贷本金（元）</label>
+                <input id="m_principal" type="number" min="0" step="0.01" value="0" />
+              </div>
+              <div>
+                <label>房贷年利率（%）</label>
+                <input id="m_rate" type="number" step="0.0001" value="0" />
+              </div>
+              <div>
+                <label>房贷期限（年）</label>
+                <input id="m_years" type="number" min="0" step="1" value="0" />
+              </div>
+              <div>
+                <label>还款方式</label>
+                <select id="m_type">
+                  <option value="amort" selected>等额本息（最常见）</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <h3>车贷（可选）</h3>
+            <div class="form">
+              <div>
+                <label>车贷本金（元）</label>
+                <input id="c_principal" type="number" min="0" step="0.01" value="0" />
+              </div>
+              <div>
+                <label>车贷年利率（%）</label>
+                <input id="c_rate" type="number" step="0.0001" value="0" />
+              </div>
+              <div>
+                <label>车贷期限（年）</label>
+                <input id="c_years" type="number" min="0" step="1" value="0" />
+              </div>
+              <div>
+                <label>还款方式</label>
+                <select id="c_type">
+                  <option value="amort" selected>等额本息</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <h3>计算目标</h3>
+            <div class="form">
+              <div>
+                <label>我想看</label>
+                <select id="d_goal_mode">
+                  <option value="byYears" selected>给定年数 → 计算未来余额</option>
+                  <option value="byTarget">给定目标 → 估算需要多久</option>
+                </select>
+              </div>
+              <div>
+                <label>年数（年）</label>
+                <input id="d_years" type="number" min="0" step="0.01" value="10" />
+              </div>
+              <div>
+                <label>目标金额（元）</label>
+                <input id="d_target" type="number" min="0" step="0.01" value="500000" />
+              </div>
+              <div>
+                <label>起始存款（元）</label>
+                <input id="d_start" type="number" min="0" step="0.01" value="0" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="toggle">
+                <input id="d_tvm" type="checkbox" />
+                <div>
+                  <div style="font-size:13px;font-weight:600;">是否考虑时间价值（TVM）</div>
+                  <div class="small">勾选后会给出“折现到今天的等值（PV）”，并显示净资产（扣剩余贷款）。</div>
+                </div>
+              </div>
+              <div style="min-width:220px;flex:1">
+                <label>折现率（年 %，TVM 勾选时生效）</label>
+                <input id="d_disc" type="number" step="0.0001" value="3" />
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="primary" id="d_calc">计算</button>
+              <button class="ghost" id="d_reset">重置示例</button>
+            </div>
+          </div>
+        </div>
+
+        <footer>
+          <div class="note">
+            公式依据：普通年金未来值/逐期现金流复利、贷款等额本息 PMT 与摊销余额、以及 TVM 的 PV/FV 换算。:contentReference[oaicite:0]{index=0}
+          </div>
+        </footer>
+      </section>
+
+      <aside class="card" id="rightCard">
+        <div class="titleRow">
+          <div>
+            <h2>结果</h2>
+            <p class="hint">新增“累计净存入（不含收益）”自检：每月存 3000，10 年应为 360,000（不含利息）。</p>
+          </div>
+        </div>
+        <div class="results" id="results"></div>
+        <div class="small" id="formulaNote" style="margin-top:8px"></div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    // ---------- helpers ----------
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => {
+      if (!isFinite(n)) return "—";
+      const sign = n < 0 ? "-" : "";
+      n = Math.abs(n);
+      return sign + n.toLocaleString("zh-CN", {maximumFractionDigits: 2, minimumFractionDigits: 2});
+    };
+    const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
+    const toRate = (pct) => (Number(pct) || 0) / 100;
+
+    function futureValueSingle(PV, annualRate, years, m){
+      const r = annualRate;
+      const n = (Number(m) || 1) * (Number(years) || 0);
+      const i = r / (Number(m) || 1);
+      return PV * Math.pow(1 + i, n);
+    }
+    function presentValueSingle(FV, annualDisc, years, m){
+      const r = annualDisc;
+      const n = (Number(m) || 1) * (Number(years) || 0);
+      const i = r / (Number(m) || 1);
+      return FV / Math.pow(1 + i, n);
+    }
+
+    // loan: PMT & remaining balance
+    function loanPMT(principal, annualRate, years){
+      const L = Number(principal) || 0;
+      const r = Number(annualRate) || 0;
+      const N = Math.round((Number(years) || 0) * 12);
+      if (L <= 0 || N <= 0) return {pmt:0, N:0, i:0};
+      const i = r / 12;
+      if (Math.abs(i) < 1e-12) return {pmt: L / N, N, i};
+      const pmt = (i * L) / (1 - Math.pow(1 + i, -N));
+      return {pmt, N, i};
+    }
+    function remainingBalance(principal, annualRate, yearsTerm, monthsPaid){
+      const L = Number(principal) || 0;
+      const r = Number(annualRate) || 0;
+      const {pmt, N, i} = loanPMT(L, r, yearsTerm);
+      const k = clamp(Math.round(monthsPaid), 0, N);
+      if (L <= 0 || N <= 0) return 0;
+      if (Math.abs(i) < 1e-12) return Math.max(0, L - pmt * k);
+      const pow = Math.pow(1+i, k);
+      const Bk = L * pow - pmt * ((pow - 1) / i);
+      return Math.max(0, Bk);
+    }
+
+    function renderKPIs(items, note=""){
+      const box = $("results");
+      box.innerHTML = "";
+      items.forEach(it=>{
+        const div = document.createElement("div");
+        div.className = "kpi";
+        div.innerHTML = `
+          <div class="k">${it.k}</div>
+          <div class="v mono ${it.cls||""}">${it.v}</div>
+          ${it.s ? `<div class="s">${it.s}</div>` : ``}
+        `;
+        box.appendChild(div);
+      });
+      $("formulaNote").textContent = note || "";
+    }
+
+    // ---------- tabs ----------
+    const tabMeta = {
+      invest: { title: "投资到银行", hint: "输入本金、投入年限与年利率，计算未来总额与利润（支持按年或按月复利）。", panelId: "panel-invest" },
+      equiv:  { title: "等额换算（过去/未来）", hint: "把某笔钱按利率折现或复利换算到另一个时间点：未来值 FV 或现值 PV。", panelId: "panel-equiv" },
+      daily:  { title: "日常资金（含房贷/车贷）", hint: "按月累积：每月结余都会存入并复利，支持工资/消费增长 + 年终奖 + 大额支出。", panelId: "panel-daily" }
+    };
+
+    function setTab(tab){
+      document.querySelectorAll(".tabBtn").forEach(btn=>{
+        btn.setAttribute("aria-selected", btn.dataset.tab === tab ? "true" : "false");
+      });
+      document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+      $(tabMeta[tab].panelId).classList.add("active");
+      $("panelTitle").textContent = tabMeta[tab].title;
+      $("panelHint").textContent = tabMeta[tab].hint;
+      $("tvmpill").textContent = tab === "equiv" ? "TVM 模式" : "TVM 可选";
+      renderKPIs([{k:"提示", v:"请选择参数后点击「计算」", s:"右侧会展示结果与关键指标。"}], "");
+    }
+    document.querySelectorAll(".tabBtn").forEach(btn=>{
+      btn.addEventListener("click", ()=> setTab(btn.dataset.tab));
+    });
+
+    // ---------- calculators ----------
+    function calcInvest(){
+      const PV = Number($("inv_pv").value)||0;
+      const r = toRate($("inv_rate").value);
+      const years = Number($("inv_years").value)||0;
+      const m = Number($("inv_comp").value)||1;
+
+      const FV = futureValueSingle(PV, r, years, m);
+      const profit = FV - PV;
+
+      const tvm = $("inv_tvm").checked;
+      const disc = toRate($("inv_disc").value);
+      const FV_PV = tvm ? presentValueSingle(FV, disc, years, m) : NaN;
+
+      const items = [
+        {k:"未来总额（FV）", v:`¥ ${fmt(FV)}`, s:`按${m===12?"月":"年"}复利，年利率 ${(r*100).toFixed(4)}%。`},
+        {k:"利润（FV - PV）", v:`¥ ${fmt(profit)}`, cls: profit>=0 ? "ok" : "bad", s:`本金 ¥ ${fmt(PV)}`},
+      ];
+      if (tvm){
+        items.push({k:"折现到今天的等值（PV）", v:`¥ ${fmt(FV_PV)}`, s:`折现率 ${(disc*100).toFixed(4)}%。`});
+      }
+      renderKPIs(items, "公式：FV = PV·(1+r/m)^(m·t)，TVM：PV = FV/(1+d/m)^(m·t)");
+    }
+
+    function calcEquiv(){
+      const A = Number($("eq_amount").value)||0;
+      const r = toRate($("eq_rate").value);
+      const years = Number($("eq_years").value)||0;
+      const m = Number($("eq_comp").value)||1;
+      const dir = $("eq_dir").value;
+      const tvm = $("eq_tvm").checked;
+
+      let out = A;
+      let label = "";
+      if (dir === "toFuture"){
+        out = tvm ? futureValueSingle(A, r, years, m) : A * (1 + r*years);
+        label = tvm ? "未来等值（FV）" : "未来金额（简单计息）";
+      } else {
+        out = tvm ? presentValueSingle(A, r, years, m) : A / (1 + r*years);
+        label = tvm ? "现在等值（PV）" : "现在金额（简单折算）";
+      }
+
+      const items = [
+        {k: label, v:`¥ ${fmt(out)}`, s:`方向：${dir==="toFuture"?"现在 → 未来":"未来 → 现在"}；频率：按${m===12?"月":"年"}。`},
+        {k:"输入金额", v:`¥ ${fmt(A)}`, s:`年利率/折现率 ${(r*100).toFixed(4)}%，年数 ${years}。`},
+      ];
+      renderKPIs(items, tvm ? "FV/PV：标准 TVM 复利折现" : "未勾选TVM：简单计息/简单折算（仅作对比）");
+    }
+
+    // ---- DAILY: fixed + realistic monthly accumulation ----
+    function effectiveMonthlyRate(annualRate, comp){
+      // comp=12: nominal monthly r/12
+      // comp=1 : convert annual effective to monthly: (1+R)^(1/12)-1
+      if (comp === 12) return annualRate / 12;
+      return Math.pow(1 + annualRate, 1/12) - 1;
+    }
+
+    function yearsToMonthsSafe(years){
+      const y = Number(years);
+      if (!isFinite(y) || y <= 0) return 0;
+      // hard convert years -> integer months
+      return Math.max(0, Math.floor(y * 12 + 1e-9));
+    }
+
+    function simulateDailyFVAndDeposits({
+      start,
+      baseSalary,
+      baseExpenses,
+      gSalary,
+      gExpenses,
+      annualReturn,
+      comp,
+      mort, car,
+      years,
+      annualBonus,
+      annualBigExp
+    }){
+      const months = yearsToMonthsSafe(years);
+      const rM = effectiveMonthlyRate(annualReturn, comp);
+
+      let bal = Number(start)||0;
+      let depositsNoReturn = Number(start)||0; // for self-check: principal contributed, no investment returns
+      let totalNetFlow = 0;
+
+      for (let t=0; t<months; t++){
+        const yIndex = Math.floor(t/12); // 0-based year
+        const salaryM = (Number(baseSalary)||0) * Math.pow(1 + (Number(gSalary)||0), yIndex);
+        const expM    = (Number(baseExpenses)||0) * Math.pow(1 + (Number(gExpenses)||0), yIndex);
+
+        const loanPayM =
+          (t < mort.N ? mort.pmt : 0) +
+          (t < car.N  ? car.pmt  : 0);
+
+        // end-of-year adjustments at last month of each year (month 11, 23, 35...)
+        const isYearEndMonth = (t % 12) === 11;
+        const bonusM  = isYearEndMonth ? (Number(annualBonus)||0) : 0;
+        const bigExpM = isYearEndMonth ? (Number(annualBigExp)||0) : 0;
+
+        const netM = salaryM + bonusM - expM - bigExpM - loanPayM;
+
+        // monthly compounding, then add this month's net saving (ordinary annuity assumption)
+        bal = bal * (1 + rM) + netM;
+
+        // principal-only tracker (no investment return)
+        depositsNoReturn += netM;
+        totalNetFlow += netM;
+      }
+
+      return { FV: bal, depositsNoReturn, totalNetFlow, months };
+    }
+
+    function pvOfFV(FV, years, discAnnual, comp){
+      const dM = effectiveMonthlyRate(discAnnual, comp);
+      const N = yearsToMonthsSafe(years);
+      return FV / Math.pow(1 + dM, N);
+    }
+
+    function calcDaily(){
+      const salary = Number($("d_salary").value)||0;
+      const expenses = Number($("d_expenses").value)||0;
+      const start = Number($("d_start").value)||0;
+
+      const gSalary = toRate($("d_salary_g").value);
+      const gExpenses = toRate($("d_expenses_g").value);
+
+      const annualBonus = Number($("d_bonus").value)||0;
+      const annualBigExp = Number($("d_bigexp").value)||0;
+
+      const ret = toRate($("d_return").value);
+      const comp = Number($("d_comp").value)||12;
+      const goalMode = $("d_goal_mode").value;
+
+      // loans
+      const mp = Number($("m_principal").value)||0;
+      const mr = toRate($("m_rate").value);
+      const my = Number($("m_years").value)||0;
+
+      const cp = Number($("c_principal").value)||0;
+      const cr = toRate($("c_rate").value);
+      const cy = Number($("c_years").value)||0;
+
+      const mLoan = loanPMT(mp, mr, my);
+      const cLoan = loanPMT(cp, cr, cy);
+
+      const tvm = $("d_tvm").checked;
+      const disc = toRate($("d_disc").value);
+
+      const month1Net = salary - expenses - (mLoan.pmt + cLoan.pmt);
+
+      const hasLoan = (mp>0 && my>0) || (cp>0 && cy>0);
+
+      function solveYearsForTarget(target){
+        let lo = 0, hi = 100;
+        for (let iter=0; iter<80; iter++){
+          const mid = (lo+hi)/2;
+          const sim = simulateDailyFVAndDeposits({
+            start, baseSalary: salary, baseExpenses: expenses,
+            gSalary, gExpenses,
+            annualReturn: ret, comp,
+            mort: mLoan, car: cLoan,
+            years: mid,
+            annualBonus, annualBigExp
+          });
+          if (sim.FV >= target) hi = mid; else lo = mid;
+        }
+        return hi;
+      }
+
+      const items = [];
+      items.push({
+        k:"第 1 个月净结余（快照）",
+        v:`¥ ${fmt(month1Net)}`,
+        cls: month1Net>=0 ? "ok" : "bad",
+        s:`工资 ¥ ${fmt(salary)} - 消费 ¥ ${fmt(expenses)} - 月供 ¥ ${fmt(mLoan.pmt + cLoan.pmt)}`
+      });
+      items.push({
+        k:"年终奖 / 大额支出（年）",
+        v:`+¥ ${fmt(annualBonus)} / -¥ ${fmt(annualBigExp)}`,
+        s:"每年最后一个月统一入账/扣除。"
+      });
+
+      if (hasLoan){
+        if (mp>0 && my>0){
+          const totalPay = mLoan.pmt * mLoan.N;
+          items.push({k:"房贷月供（等额本息）", v:`¥ ${fmt(mLoan.pmt)}`, s:`总期数 ${mLoan.N}；预计总利息 ¥ ${fmt(totalPay - mp)}。`});
+        }
+        if (cp>0 && cy>0){
+          const totalPay = cLoan.pmt * cLoan.N;
+          items.push({k:"车贷月供（等额本息）", v:`¥ ${fmt(cLoan.pmt)}`, s:`总期数 ${cLoan.N}；预计总利息 ¥ ${fmt(totalPay - cp)}。`});
+        }
+      }
+
+      if (goalMode === "byYears"){
+        const years = Number($("d_years").value)||0;
+
+        const sim = simulateDailyFVAndDeposits({
+          start, baseSalary: salary, baseExpenses: expenses,
+          gSalary, gExpenses,
+          annualReturn: ret, comp,
+          mort: mLoan, car: cLoan,
+          years,
+          annualBonus, annualBigExp
+        });
+
+        const months = sim.months;
+        const mortBal = remainingBalance(mp, mr, my, months);
+        const carBal  = remainingBalance(cp, cr, cy, months);
+        const netWorth = sim.FV - mortBal - carBal;
+
+        items.push({k:`${years} 年后储蓄账户余额（FV）`, v:`¥ ${fmt(sim.FV)}`, s:`按月累积（每月结余存入并计息）。`});
+
+        // Self-check KPI: if monthly saving=3000 and no bonus/expense/loan and no interest,
+        // 10 years -> 360,000. This shows whether months are treated correctly.
+        items.push({
+          k:"累计净存入（不含收益，自检）",
+          v:`¥ ${fmt(sim.depositsNoReturn)}`,
+          s:`= 起始存款 + ∑(每月净结余 + 年终奖 - 大额支出)。若每月净结余3000、10年应≥360,000（不含利息）。`
+        });
+
+        if (hasLoan){
+          items.push({k:`${years} 年后剩余贷款余额`, v:`¥ ${fmt(mortBal + carBal)}`, s:`剩余房贷 ¥ ${fmt(mortBal)}；剩余车贷 ¥ ${fmt(carBal)}。`});
+          items.push({k:`${years} 年后净资产（储蓄 - 剩余贷款）`, v:`¥ ${fmt(netWorth)}`, cls: netWorth>=0 ? "ok" : "bad", s:"更接近“真实拥有的钱”。"});
+        }
+
+        if (tvm){
+          items.push({k:"折现到今天的储蓄等值（PV）", v:`¥ ${fmt(pvOfFV(sim.FV, years, disc, comp))}`, s:`折现率 ${(disc*100).toFixed(4)}%。`});
+          if (hasLoan){
+            items.push({k:"折现到今天的净资产等值（PV）", v:`¥ ${fmt(pvOfFV(netWorth, years, disc, comp))}`, cls: netWorth>=0 ? "ok" : "bad", s:"把未来净资产折算成今天的购买力口径。"});
+          }
+        }
+
+        renderKPIs(items,
+          "日常资金：逐月现金流复利累积；普通年金/现金流复利思想见权威说明。:contentReference[oaicite:1]{index=1}"
+        );
+
+      } else {
+        const target = Number($("d_target").value)||0;
+
+        const yearsNeed = solveYearsForTarget(target);
+
+        const sim = simulateDailyFVAndDeposits({
+          start, baseSalary: salary, baseExpenses: expenses,
+          gSalary, gExpenses,
+          annualReturn: ret, comp,
+          mort: mLoan, car: cLoan,
+          years: yearsNeed,
+          annualBonus, annualBigExp
+        });
+
+        const months = sim.months;
+        const mortBal = remainingBalance(mp, mr, my, months);
+        const carBal  = remainingBalance(cp, cr, cy, months);
+        const netWorth = sim.FV - mortBal - carBal;
+
+        items.push({k:"达到目标所需时间（估算）", v:`约 ${fmt(yearsNeed)} 年`, s:"用二分搜索在 0~100 年内求解。"});
+        items.push({k:"到达时的储蓄余额（FV）", v:`¥ ${fmt(sim.FV)}`, cls: sim.FV>=target ? "ok" : "", s:`目标 ¥ ${fmt(target)}。`});
+        items.push({k:"累计净存入（不含收益，自检）", v:`¥ ${fmt(sim.depositsNoReturn)}`, s:"如果这个值明显偏小（比如少了 12 倍），说明输入/单位或年数未按月换算。"});
+        if (hasLoan){
+          items.push({k:"到达时剩余贷款余额", v:`¥ ${fmt(mortBal + carBal)}`, s:`剩余房贷 ¥ ${fmt(mortBal)}；剩余车贷 ¥ ${fmt(carBal)}。`});
+          items.push({k:"到达时净资产（储蓄 - 剩余贷款）", v:`¥ ${fmt(netWorth)}`, cls: netWorth>=0 ? "ok" : "bad", s:"净资产口径更接近真实。"});
+        }
+        if (tvm){
+          items.push({k:"折现到今天的储蓄等值（PV）", v:`¥ ${fmt(pvOfFV(sim.FV, yearsNeed, disc, comp))}`, s:`折现率 ${(disc*100).toFixed(4)}%。`});
+          if (hasLoan){
+            items.push({k:"折现到今天的净资产等值（PV）", v:`¥ ${fmt(pvOfFV(netWorth, yearsNeed, disc, comp))}`, cls: netWorth>=0 ? "ok" : "bad", s:"TVM 口径下的今天等值净资产。"});
+          }
+        }
+
+        renderKPIs(items,
+          "目标求解：二分搜索 + 逐月现金流累积；PMT 等额本息与贷款摊销是标准做法。:contentReference[oaicite:2]{index=2}"
+        );
+      }
+    }
+
+    // ---------- wire buttons ----------
+    $("inv_calc").addEventListener("click", calcInvest);
+    $("eq_calc").addEventListener("click", calcEquiv);
+    $("d_calc").addEventListener("click", calcDaily);
+
+    $("inv_reset").addEventListener("click", ()=>{
+      $("inv_pv").value = 100000;
+      $("inv_rate").value = 2.5;
+      $("inv_years").value = 5;
+      $("inv_comp").value = 12;
+      $("inv_tvm").checked = false;
+      $("inv_disc").value = 3;
+      calcInvest();
+    });
+    $("eq_reset").addEventListener("click", ()=>{
+      $("eq_amount").value = 10000;
+      $("eq_rate").value = 3;
+      $("eq_years").value = 10;
+      $("eq_dir").value = "toFuture";
+      $("eq_comp").value = 1;
+      $("eq_tvm").checked = true;
+      $("eq_note").value = "";
+      calcEquiv();
+    });
+    $("d_reset").addEventListener("click", ()=>{
+      $("d_salary").value = 12000;
+      $("d_expenses").value = 6000;
+      $("d_salary_g").value = 3;
+      $("d_expenses_g").value = 2;
+      $("d_bonus").value = 0;
+      $("d_bigexp").value = 0;
+      $("d_return").value = 3.5;
+      $("d_comp").value = 12;
+      $("m_principal").value = 0;
+      $("m_rate").value = 0;
+      $("m_years").value = 0;
+      $("c_principal").value = 0;
+      $("c_rate").value = 0;
+      $("c_years").value = 0;
+      $("d_goal_mode").value = "byYears";
+      $("d_years").value = 10;
+      $("d_target").value = 500000;
+      $("d_start").value = 0;
+      $("d_tvm").checked = false;
+      $("d_disc").value = 3;
+      calcDaily();
+    });
+
+    function syncGoalUI(){
+      const mode = $("d_goal_mode").value;
+      $("d_years").disabled = (mode !== "byYears");
+      $("d_target").disabled = (mode !== "byTarget");
+      $("d_years").style.opacity = $("d_years").disabled ? ".6" : "1";
+      $("d_target").style.opacity = $("d_target").disabled ? ".6" : "1";
+    }
+    $("d_goal_mode").addEventListener("change", syncGoalUI);
+    syncGoalUI();
+
+    // init
+    setTab("invest");
+    calcInvest();
+  </script>
+</body>
+</html>
